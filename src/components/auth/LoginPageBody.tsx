@@ -4,6 +4,7 @@ import { Card } from '../common/Card';
 import { useLanguage } from '../../lib/i18n';
 import { useStore } from '../../store';
 import { HomeGuestHero } from '../home/HomeGuestHero';
+import { PhotoOrInitials } from '../common/PhotoOrInitials';
 import { LoginGuestHeroStrip } from './LoginGuestHeroStrip';
 import { LoginExploreDemoButton } from './LoginExploreDemoButton';
 import { appEnv } from '../../lib/config/env';
@@ -150,7 +151,8 @@ const TOKENS: Record<LoginVariant, LoginVariantTokens> = {
     wordmarkClass: 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-violet-400',
     userBtnClass: cn(DARK_USER_BTN, 'hover:bg-indigo-900/30 hover:border-indigo-800'),
     avatarBg: 'bg-indigo-900/50',
-    avatarText: 'text-indigo-400',
+    // Initials show when a photo does not load; indigo-300 keeps them readable (AA).
+    avatarText: 'text-indigo-300',
     nameHoverClass: 'group-hover:text-indigo-400',
     mutedText: 'text-gray-300',
     dividerLine: 'border-gray-700',
@@ -221,7 +223,7 @@ export default function LoginPageBody({ variant }: { variant: LoginVariant }) {
     }
     if (!demoLogin) {
       // Real sign-in only: never fall back to a demo identity.
-      toast.error(t('Η σύνδεση με Google απέτυχε. Δοκιμάστε ξανά.', 'Google sign-in failed. Please try again.'));
+      toast.error(t('Η σύνδεση με Google απέτυχε. Δοκίμασε ξανά.', 'Google sign-in failed. Please try again.'));
       return;
     }
     toast.info(
@@ -245,9 +247,9 @@ export default function LoginPageBody({ variant }: { variant: LoginVariant }) {
           <div className="flex items-center justify-center text-sm md:text-base font-black tracking-tight mb-4 font-['Outfit']">
             <span className={tok.wordmarkClass}>NAKAMAS</span>
           </div>
-          <h1 className={cn(APP_TYPO.pageTitle, tok.stripDark ? 'text-white' : 'text-ink')}>{t('Καλώς ήρθατε', 'Welcome back')}</h1>
+          <h1 className={cn(APP_TYPO.pageTitle, tok.stripDark ? 'text-white' : 'text-ink')}>{t('Καλώς ήρθες', 'Welcome back')}</h1>
           <p className={cn(APP_TYPO.pageSub, tok.mutedText)}>
-            {t('Συνδεθείτε για να ανακαλύψετε αξιόπιστες ομάδες και εμπειρίες.', 'Log in to discover trusted groups and experiences.')}
+            {t('Συνδέσου για να ανακαλύψεις αξιόπιστες ομάδες και εμπειρίες.', 'Log in to discover trusted groups and experiences.')}
           </p>
         </div>
 
@@ -257,7 +259,7 @@ export default function LoginPageBody({ variant }: { variant: LoginVariant }) {
           <LoginExploreDemoButton />
 
           <div className={cn('text-center text-xs font-bold tracking-wide mb-4', tok.mutedText)}>
-            {t('Επιλέξτε Λογαριασμό (Demo)', 'Select Account (Demo)')}
+            {t('Επίλεξε λογαριασμό (Demo)', 'Select Account (Demo)')}
           </div>
           <div className="grid grid-cols-1 gap-3">
             {/* Three member accounts plus one seeded moderator, so Admin stays demo-able
@@ -269,14 +271,8 @@ export default function LoginPageBody({ variant }: { variant: LoginVariant }) {
                 onClick={() => handleLogin(user.id)}
                 className={tok.userBtnClass}
               >
-                <div className={cn('h-10 w-10 rounded-full overflow-hidden flex-shrink-0', tok.avatarBg)}>
-                  {user.photoUrl ? (
-                    <img referrerPolicy="no-referrer" src={user.photoUrl} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className={cn('w-full h-full flex items-center justify-center font-bold', tok.avatarText)}>
-                      {user.name.substring(0, 2)}
-                    </div>
-                  )}
+                <div className={cn('h-10 w-10 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center font-bold', tok.avatarBg, tok.avatarText)}>
+                  <PhotoOrInitials src={user.photoUrl} name={user.name} />
                 </div>
                 <div>
                   <div className={cn('text-sm font-bold', tok.stripDark ? 'text-white' : 'text-gray-900', tok.nameHoverClass)}>{user.name}</div>
@@ -297,7 +293,7 @@ export default function LoginPageBody({ variant }: { variant: LoginVariant }) {
               <div className={cn('w-full border-t', tok.dividerLine)} />
             </div>
             <div className="relative flex justify-center">
-              <span className={cn('px-2 text-xs tracking-wide', tok.dividerChip)}>{t('Ή συνεχίστε με', 'Or continue with')}</span>
+              <span className={cn('px-2 text-xs tracking-wide', tok.dividerChip)}>{t('Ή συνέχισε με', 'Or continue with')}</span>
             </div>
           </div>
           )}
@@ -316,7 +312,7 @@ export default function LoginPageBody({ variant }: { variant: LoginVariant }) {
 
         <div className="text-center mt-4">
           <p className={cn('text-xs font-medium leading-relaxed', tok.mutedText)}>
-            {t('Συνεχίζοντας, συμφωνείτε με τους', 'By continuing, you agree to Nakamas')}{' '}
+            {t('Συνεχίζοντας, συμφωνείς με τους', 'By continuing, you agree to Nakamas')}{' '}
             <Link to="/help" className="underline font-semibold hover:opacity-80">
               {t('Όρους Χρήσης', 'Terms of Service')}
             </Link>

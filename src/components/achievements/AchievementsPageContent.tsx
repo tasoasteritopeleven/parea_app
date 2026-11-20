@@ -11,7 +11,8 @@ import { usePageContrast } from '../../hooks/usePageContrast';
 import { useStore } from '../../store';
 import { DailyChallengeCard, GamificationHubNav, GamificationSummary } from './GamificationHub';
 import { useGamificationData } from '../../hooks/useGamificationData';
-import { ACHIEVEMENT_MINI, NakamasMini } from '../illustrations/NakamasMini';
+import { NakamasMini } from '../illustrations/NakamasMini';
+import { ACHIEVEMENT_MINI } from '../illustrations/miniMaps';
 
 /**
  * Achievements (Φ25): nakamas hub layout (shared nav + ring summary + daily

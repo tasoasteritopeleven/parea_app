@@ -13,7 +13,8 @@ import { usePageContrast } from '../hooks/usePageContrast';
 import { cn } from '../lib/utils';
 import { toast } from 'sonner';
 import { APP_TYPO } from '../lib/typographyTokens';
-import { CHALLENGE_MINI, NakamasMini, type NakamasMiniId } from '../components/illustrations/NakamasMini';
+import { NakamasMini, type NakamasMiniId } from '../components/illustrations/NakamasMini';
+import { CHALLENGE_MINI } from '../components/illustrations/miniMaps';
 
 interface Challenge {
   id: string;
@@ -152,8 +153,8 @@ export default function ChallengesClassic() {
     toggleChallengeJoined(id);
     toast.success(
       wasJoined
-        ? t('Αποχωρήσατε από την πρόκληση', 'Left the challenge')
-        : t('Συμμετέχετε στην πρόκληση', 'Joined the challenge'),
+        ? t('Αποχώρησες από την πρόκληση', 'Left the challenge')
+        : t('Μπήκες στην πρόκληση', 'Joined the challenge'),
     );
   };
 
