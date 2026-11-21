@@ -70,4 +70,33 @@ test.describe('Discover card image picker', () => {
     const photoBottom = await photo.evaluate((el) => el.getBoundingClientRect().bottom);
     expect(ctaTop).toBeGreaterThan(photoBottom - 1);
   });
+
+  test('Plans and Find Nakamas reuse the same seven depths on card photos', async ({ page }) => {
+    await enterDemoGuest(page);
+
+    await page.goto('/plans');
+    const plansPicker = page.locator('[data-card-image-picker]');
+    await expect(plansPicker).toBeVisible({ timeout: 15_000 });
+    await plansPicker.locator('[data-card-image-toggle]').click();
+    await expect(plansPicker.getByRole('radio')).toHaveCount(ALL_DEPTHS.length);
+    await plansPicker.locator('[data-card-image-option="title"]').click();
+    const plansCard = page.locator('#main-content .nakamas-card').first();
+    const plansPhoto = plansCard.locator('[data-image-depth]');
+    await expect(plansPhoto).toHaveAttribute('data-image-depth', 'title');
+    await expect(plansCard.getByText(/· \d{1,2}:\d{2}/).first()).toBeVisible();
+    await plansPicker.locator('[data-card-image-option="full"]').click();
+    await expect(plansPhoto).toHaveAttribute('data-image-depth', 'full');
+    await expect(plansCard.getByRole('button', { name: /Λεπτομέρειες|Details/ })).toBeVisible();
+    await expect(plansCard.getByRole('button', { name: /Αποχώρηση|Leave/ })).toBeVisible();
+    await plansPicker.locator('[data-card-image-option="title"]').click();
+
+    await page.goto('/buddy-seek');
+    const seekPicker = page.locator('[data-card-image-picker]');
+    await expect(seekPicker).toBeVisible({ timeout: 15_000 });
+    const seekPhoto = page.locator('#main-content [data-image-depth]').first();
+    await expect(seekPhoto).toHaveAttribute('data-image-depth', 'title');
+    await seekPicker.locator('[data-card-image-toggle]').click();
+    await seekPicker.locator('[data-card-image-option="facts"]').click();
+    await expect(page.locator('#main-content [data-image-depth]').first()).toHaveAttribute('data-image-depth', 'facts');
+  });
 });

@@ -18,9 +18,12 @@ test.describe('Find Nakamas', () => {
 
     await expect(page.getByText('Κουκάκι, Αθήνα').or(page.getByText('Koukaki, Athens'))).toBeVisible();
     await expect(page.getByText('Καφές στο Κουκάκι')).toHaveCount(1);
-    const coffeeCover = page.locator('[data-mini-outing-card]').filter({ hasText: 'Καφές στο Κουκάκι' }).locator('img');
+    const coffeeCard = page.locator('[data-mini-outing-card]').filter({ hasText: 'Καφές στο Κουκάκι' });
+    const coffeeCover = coffeeCard.locator('img');
     await expect(coffeeCover).toBeVisible();
     await expect(coffeeCover).toHaveAttribute('src', /\/covers\/coffee\.jpg/);
+    await expect(coffeeCard.getByRole('button', { name: 'Καφές στο Κουκάκι' })).toBeVisible();
+    await expect(coffeeCard.getByRole('button', { name: /Λεπτομέρειες|Details/ })).toBeVisible();
 
     const filters = page.getByRole('button', { name: /^Φίλτρα$|^Filters$/ });
     await expect(filters).toBeVisible();
@@ -54,6 +57,9 @@ test.describe('Find Nakamas', () => {
     await page.getByRole('button', { name: /Νέο αίτημα από εκδήλωση|New request from event/ }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.getByRole('button', { name: /Ακύρωση|Cancel/ }).click();
+
+    await coffeeCard.getByRole('button', { name: 'Καφές στο Κουκάκι' }).click();
+    await expect(page).toHaveURL(/\/events\//);
   });
 
   test('Discover rail matches the quiet Find Nakamas cards', async ({ page }) => {
@@ -115,5 +121,8 @@ test.describe('Find Nakamas', () => {
     });
     await expect(sheet.getByText('Athens Street Food Festival 2026')).toBeVisible();
     await expect(sheet.getByText('ADD Festival 2026')).toBeVisible();
+    await sheet.getByRole('button', { name: /Δες εκδήλωση|View event/ }).first().click();
+    await expect(page).toHaveURL(/\/events\//);
+    await expect(page.getByRole('dialog', { name: /Βρες Nakamas|Find Nakamas/ })).toHaveCount(0);
   });
 });
