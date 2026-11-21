@@ -125,15 +125,26 @@ describe('outings in the store (Φ27)', () => {
   });
 
   it('creates a small outing with the same trust rules', () => {
-    const gid = useStore.getState().createMiniOuting({ kind: 'coffee', date: '2026-12-01', time: '10:00', area: 'Pangrati, Athens', size: 3 })!;
+    const gid = useStore.getState().createMiniOuting({ kind: 'coffee', date: '2026-12-01', time: '10:00', area: 'Koukaki, Athens', size: 3 })!;
     const st = useStore.getState();
     const g = st.groups.find((x) => x.id === gid)!;
     const e = st.events.find((x) => x.id === g.eventId)!;
     expect(e.kind).toBe('mini_outing');
     expect(e.imageUrl).toMatch(/^\/covers\//);
     expect(e.minTrustTierAccess).toBe('2_confirmed');
+    expect(e.lat).toBeCloseTo(37.9655);
+    expect(e.lng).toBeCloseTo(23.7243);
     expect(g.hostId).toBe('u1');
     expect(g.targetSize).toBe(3);
+  });
+
+  it('forgets the map pin on logout so the next account does not inherit GPS', () => {
+    useStore.getState().updateUserSettings({
+      mapLocation: { lat: 37.9755, lng: 23.7348, label: 'Η θέση σου', source: 'gps' },
+    });
+    expect(useStore.getState().userSettings.mapLocation?.source).toBe('gps');
+    useStore.getState().logout();
+    expect(useStore.getState().userSettings.mapLocation).toBeNull();
   });
 
   it('keeps only result, method and date for a selfie check; demo reset restores seeds', () => {

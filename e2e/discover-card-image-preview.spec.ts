@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { enterDemoGuest } from './a11y-helpers';
+import { revealNearbyMiniOutings } from './mini-outings';
 
 const ALL_DEPTHS = ['photo', 'title', 'facts', 'organizer', 'roomy', 'divider', 'full'] as const;
 
@@ -100,6 +101,7 @@ test.describe('Discover card image picker', () => {
     await plansPicker.locator('[data-card-image-option="title"]').click();
 
     await page.goto('/buddy-seek');
+    await expect(page.locator('#main-content').getByText('Καφές στο Κουκάκι')).toHaveCount(0);
     const seekPicker = page.locator('[data-card-image-picker]');
     await expect(seekPicker).toBeVisible({ timeout: 15_000 });
     const seekPhoto = page.locator('#main-content [data-image-depth]').first();
@@ -111,9 +113,10 @@ test.describe('Discover card image picker', () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await page.getByRole('button', { name: /Βρες Nakamas — σχέδια που σχηματίζονται|Find Nakamas — plans forming/ }).click();
-    const sheet = page.getByRole('dialog', { name: /Βρες Nakamas|Find Nakamas/ });
+    await page.getByRole('button', { name: /Βρες παρέα τώρα — μικρές έξοδοι δίπλα σου|Find company now — small outings next to you/ }).click();
+    const sheet = page.getByRole('dialog', { name: /Βρες παρέα τώρα|Find company now/ });
     await expect(sheet).toBeVisible();
+    await revealNearbyMiniOutings(sheet);
     const sheetPicker = sheet.locator('[data-card-image-picker]');
     await expect(sheetPicker).toBeVisible();
     await expect(sheet.locator('[data-image-depth]').first()).toHaveAttribute('data-image-depth', 'full');
@@ -134,8 +137,9 @@ test.describe('Discover card image picker', () => {
       'title',
     );
 
-    await page.getByRole('button', { name: /Βρες Nakamas — σχέδια που σχηματίζονται|Find Nakamas — plans forming/ }).click();
-    const sheet = page.getByRole('dialog', { name: /Βρες Nakamas|Find Nakamas/ });
+    await page.getByRole('button', { name: /Βρες παρέα τώρα — μικρές έξοδοι δίπλα σου|Find company now — small outings next to you/ }).click();
+    const sheet = page.getByRole('dialog', { name: /Βρες παρέα τώρα|Find company now/ });
+    await revealNearbyMiniOutings(sheet);
     await expect(sheet.locator('[data-image-depth]').first()).toHaveAttribute('data-image-depth', 'title');
     await sheet.locator('[data-card-image-toggle]').click();
     await sheet.locator('[data-card-image-option="photo"]').click();

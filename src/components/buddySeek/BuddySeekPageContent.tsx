@@ -26,7 +26,6 @@ import type { Event } from '../../types';
 import type { PlansFormingEnrichedItem } from '../../lib/plansFormingUtils';
 import type { CompanyJoinRequestStatus, CompanyRequest } from '../../types/companyRequest';
 import { usePublishPageSnapshot } from '../../hooks/usePublishPageSnapshot';
-import { MiniOutingsSection } from '../outings/MiniOutingsSection';
 import { hasUsualHours, matchesUsualHours } from '../../lib/quietCatalog';
 import {
   BuddySeekFilterBar,
@@ -64,6 +63,7 @@ export default function BuddySeekPageContent() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const feed = usePlansFormingFeed(24);
+  const setSheetOpen = useStore((s) => s.setPlansFormingSheetOpen);
   const sendJoin = useStore((s) => s.sendCompanyJoinRequest);
   const dismiss = useStore((s) => s.dismissCompanyRequest);
   const undismiss = useStore((s) => s.undismissCompanyRequest);
@@ -105,6 +105,7 @@ export default function BuddySeekPageContent() {
   const upcomingEvents = useMemo(
     () =>
       events.filter((e) => {
+        if (e.kind === 'mini_outing') return false;
         try {
           return new Date(`${e.date}T${e.time || '20:00'}`) > new Date();
         } catch {
@@ -172,8 +173,8 @@ export default function BuddySeekPageContent() {
     titleEl: 'Βρες Nakamas',
     titleEn: 'Find Nakamas',
     state: filter,
-    summaryEl: `${filtered.length} σχέδια · ${pendingForMe.length} αιτήματα προς εσένα`,
-    summaryEn: `${filtered.length} plans · ${pendingForMe.length} requests for you`,
+    summaryEl: `${filtered.length} παρέες · ${pendingForMe.length} αιτήματα προς εσένα`,
+    summaryEn: `${filtered.length} looking · ${pendingForMe.length} requests for you`,
     visibleIds: visibleSeeks.slice(0, 8).map((i) => i.intent.id),
   });
 
@@ -182,6 +183,12 @@ export default function BuddySeekPageContent() {
       <header className="space-y-3">
         <div className="space-y-1.5">
           <h1 className={cn(APP_TYPO.pageTitle, a.head)}>{t('Βρες Nakamas', 'Find Nakamas')}</h1>
+          <p className={cn('text-xs font-medium leading-relaxed', a.muted)}>
+            {t(
+              'Άτομα που ψάχνουν παρέα για εκδήλωση. Τα βράδια που έκλεισες είναι στα Σχέδιά σου· καφές ή βόλτα δίπλα σου είναι στο «Βρες παρέα».',
+              'People looking for company at an event. Nights you booked live in My Plans; coffee or a walk next to you is in “Find company”.',
+            )}
+          </p>
           <PlansFormingValueHero insights={feed.insights} />
         </div>
         {/* StatsBar omitted when ValueHero already states compatible count — less chrome. */}
@@ -192,6 +199,7 @@ export default function BuddySeekPageContent() {
           onPrivacy={() => navigate('/settings?section=buddy-seek')}
           onNewRequest={() => setEventPickerOpen(true)}
           onMyPlans={() => navigate('/plans')}
+          onNearbyNow={() => setSheetOpen(true)}
         />
         {/* A small nudge belongs with the page links, not a section of its own. */}
         {currentUser && !currentUser.vibe && (
@@ -204,9 +212,6 @@ export default function BuddySeekPageContent() {
         options={cardImage.options}
         onChange={cardImage.setDepth}
       />
-
-      {/* Φ27 — small outings without an event (coffee / walk / run) */}
-      <MiniOutingsSection imageDepth={cardImage.depth} />
 
       {feed.myActivePlan && (
         <PlansFormingYourPlanBanner
