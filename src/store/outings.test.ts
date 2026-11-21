@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useStore } from './index';
 import { currentCheckInCode, checkInPayload } from '../lib/checkIn';
+import { isLiveCatalogEvent } from '../lib/eventDisplay';
 
 function reset() {
   useStore.getState().enterDemoMode();
@@ -180,5 +181,28 @@ describe('«Ξανά μαζί» — mutual only (Φ28)', () => {
   it('a mutual mark between people already connected is a nudge, not a new connection', () => {
     const res = useStore.getState().pickSeeAgain('e5', ['u2']);
     expect(res).toEqual({ mutual: ['u2'], connected: [] });
+  });
+
+  it('rejects new groups on a cancelled outing and keeps it off the join quota', () => {
+    useStore.getState().cancelEvent('mo1');
+    const gate = useStore.getState().canJoinEvent('mo1');
+    expect(gate.ok).toBe(false);
+    expect(gate.messageEn).toMatch(/cancelled/i);
+    const before = useStore.getState().groups.length;
+    useStore.getState().createGroup('mo1', 4);
+    expect(useStore.getState().groups.length).toBe(before);
+    expect(useStore.getState().getPendingFeedbackEventIds()).not.toContain('mo1');
+  });
+
+  it('catalog hydrate keeps mini outings, including cancelled ones', () => {
+    useStore.getState().cancelEvent('mo1');
+    const catalog = useStore.getState().events.filter((e) => e.id !== 'mo1' && e.id !== 'mo2');
+    useStore.getState().hydrateEventsFromApi(catalog);
+    const mo1 = useStore.getState().events.find((e) => e.id === 'mo1');
+    const mo2 = useStore.getState().events.find((e) => e.id === 'mo2');
+    expect(mo2).toBeTruthy();
+    expect(isLiveCatalogEvent(mo2!)).toBe(true);
+    expect(mo1?.status).toBe('cancelled');
+    expect(isLiveCatalogEvent(mo1!)).toBe(false);
   });
 });
