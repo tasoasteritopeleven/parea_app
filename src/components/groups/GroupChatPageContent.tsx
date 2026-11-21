@@ -57,6 +57,7 @@ import { eventTagPath } from "../../lib/eventTags";
 import { formatPlanWhen } from '../../lib/dateLocale';
 import { showNightCoordinationTools, translateEventTag } from '../../lib/eventDisplay';
 import { formatLocationArea } from '../../lib/eventDisplay';
+import { PhotoOrInitials } from '../common/PhotoOrInitials';
 
 /** Room under the newest message so the floating chats button (desktop) never covers it. */
 const VIRTUOSO_SPACER = { Footer: () => <div aria-hidden className="h-2 md:h-14" /> };
@@ -92,7 +93,7 @@ export default function GroupChatPageContent() {
       participantUserIds: group.members,
       meetingPoint: group.meetingPoint,
     });
-  }, [group?.id, event?.id, isMember, ensureEventGroupConversation]); // eslint-disable-line react-hooks/exhaustive-deps -- bridge once per group/event
+  }, [group?.id, event?.id, isMember, group?.members, ensureEventGroupConversation]); // eslint-disable-line react-hooks/exhaustive-deps -- re-bridge when membership changes
 
   const buildSeedMessages = (): GroupChatMessage[] => {
     if (!currentUser) return [];
@@ -248,6 +249,7 @@ export default function GroupChatPageContent() {
     return (
       <div className={cn(PAGE_FILL, "py-6")}>
         <EmptyState
+          character="helper"
           title={t('Το Chat δεν βρέθηκε', 'Chat not found')}
           description={t(
             'Ίσως διαγράφηκε η ομάδα ή ο σύνδεσμος είναι λάθος.',
@@ -453,8 +455,8 @@ export default function GroupChatPageContent() {
                   </button>
                 </div>
 
-                <div className="flex items-center gap-0.5 px-2 pb-2 overflow-x-auto noscrollbar">
-                  <div className="hidden md:flex items-center gap-3 mr-2 shrink-0">
+                <div className="flex items-center gap-0.5 px-2 pb-2">
+                  <div className="hidden md:flex items-center gap-3 mr-2 min-w-0 overflow-x-auto noscrollbar">
                     <AppSelect
                       ariaLabel={t("Φίλτρο αποστολέα", "Sender filter")}
                       value={senderFilter}
@@ -477,6 +479,7 @@ export default function GroupChatPageContent() {
                     </div>
                   </div>
 
+                  <div className="ml-auto flex items-center gap-0.5 shrink-0">
                   <button
                     onClick={() => setShowSearchMobile(true)}
                     className="text-gray-400 hover:text-ink hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors p-2 shrink-0"
@@ -496,28 +499,37 @@ export default function GroupChatPageContent() {
                       <MoreHorizontal className="h-5 w-5" aria-hidden />
                     </button>
                     {toolsOpen && (
-                      <div role="menu" className="absolute right-0 top-full z-30 mt-1 min-w-48 rounded-xl border border-border bg-surface-raised p-1 shadow-soft-lg">
-                        <button role="menuitem" type="button" onClick={() => { setCallMode('audio'); setToolsOpen(false); }} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium text-ink hover:bg-surface">
-                          <Phone className="h-4 w-4" aria-hidden /> {t('Φωνητική κλήση', 'Voice call')}
-                        </button>
-                        <button role="menuitem" type="button" onClick={() => { setCallMode('video'); setToolsOpen(false); }} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium text-ink hover:bg-surface">
-                          <Video className="h-4 w-4" aria-hidden /> {t('Βιντεοκλήση', 'Video call')}
-                        </button>
-                        <button role="menuitem" type="button" onClick={() => { setShowStories((s) => !s); setToolsOpen(false); }} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium text-ink hover:bg-surface">
-                          <Images className="h-4 w-4" aria-hidden /> {t('Πολυμέσα και stories', 'Media and stories')}
-                        </button>
-                        {event && (
-                          <div role="none" className="px-2 py-1">
-                            <ChatIcebreakers
-                              eventTitle={event.title}
-                              interests={currentUser?.interests ?? []}
-                              menuItem
-                              onSuggest={(text) => { setNewMessage(text); setToolsOpen(false); }}
-                            />
-                          </div>
-                        )}
-                      </div>
+                      <>
+                        <button
+                          type="button"
+                          className="fixed inset-0 z-20 cursor-default"
+                          aria-label={t('Κλείσιμο μενού', 'Close menu')}
+                          onClick={() => setToolsOpen(false)}
+                        />
+                        <div role="menu" data-chat-tools-menu="" className="absolute right-0 top-full z-30 mt-1 min-w-48 rounded-xl border border-border bg-surface-raised p-1 shadow-soft-lg">
+                          <button role="menuitem" type="button" onClick={() => { setCallMode('audio'); setToolsOpen(false); }} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium text-ink hover:bg-surface">
+                            <Phone className="h-4 w-4" aria-hidden /> {t('Φωνητική κλήση', 'Voice call')}
+                          </button>
+                          <button role="menuitem" type="button" onClick={() => { setCallMode('video'); setToolsOpen(false); }} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium text-ink hover:bg-surface">
+                            <Video className="h-4 w-4" aria-hidden /> {t('Βιντεοκλήση', 'Video call')}
+                          </button>
+                          <button role="menuitem" type="button" onClick={() => { setShowStories((s) => !s); setToolsOpen(false); }} className="flex min-h-9 w-full items-center gap-2 rounded-lg px-3 text-left text-xs font-medium text-ink hover:bg-surface">
+                            <Images className="h-4 w-4" aria-hidden /> {t('Πολυμέσα και stories', 'Media and stories')}
+                          </button>
+                          {event && (
+                            <div role="none" className="px-2 py-1">
+                              <ChatIcebreakers
+                                eventTitle={event.title}
+                                interests={currentUser?.interests ?? []}
+                                menuItem
+                                onSuggest={(text) => { setNewMessage(text); setToolsOpen(false); }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </>
                     )}
+                  </div>
                   </div>
                 </div>
               </>
@@ -546,7 +558,9 @@ export default function GroupChatPageContent() {
             isEphemeral={isEphemeral}
             venue={event.exactLocation || event.locationArea}
             meetingPoint={group.meetingPoint}
+            meetAt={event.time}
             locked={group.status !== "confirmed" && group.status !== "completed"}
+            canAnnounce={isMember}
           />
 
           {/* Messages Virtualized */}
@@ -841,12 +855,9 @@ export default function GroupChatPageContent() {
                         >
                           <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-white/15 overflow-hidden shrink-0 relative group shadow-soft border border-gray-100 dark:border-border">
                             {member.photoUrl ? (
-                              <img
-                                referrerPolicy="no-referrer"
-                                src={member.photoUrl}
-                                alt={member.name}
-                                className={`w-full h-full object-cover transition-all ${!isCloseToEvent && member.id !== currentUser.id ? "blur-sm grayscale opacity-80" : ""}`}
-                              />
+                              <span className="flex h-full w-full items-center justify-center text-xs font-bold">
+                                <PhotoOrInitials src={member.photoUrl} name={member.name} imgClassName={`w-full h-full object-cover transition-all ${!isCloseToEvent && member.id !== currentUser.id ? "blur-sm grayscale opacity-80" : ""}`} />
+                              </span>
                             ) : (
                               <div className={cn("w-full h-full flex items-center justify-center font-bold text-xs", gc.avatarPlaceholder)}>
                                 {member.name.substring(0, 2)}
@@ -1337,11 +1348,9 @@ export default function GroupChatPageContent() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-10 h-10 rounded-full bg-surface overflow-hidden shrink-0 border border-border">
                         {member.photoUrl ? (
-                          <img
-                            src={member.photoUrl}
-                            alt={member.name}
-                            className="w-full h-full object-cover"
-                          />
+                          <span className="flex h-full w-full items-center justify-center text-xs font-bold">
+                            <PhotoOrInitials src={member.photoUrl} name={member.name} imgClassName="w-full h-full object-cover" />
+                          </span>
                         ) : (
                           <div className={cn("w-full h-full flex items-center justify-center font-bold text-xs", gc.avatarPlaceholder)}>
                             {member.name.substring(0, 2)}

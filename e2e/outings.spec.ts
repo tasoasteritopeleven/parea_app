@@ -147,6 +147,8 @@ test.describe('Group outings', () => {
   });
 
   test('My Plans shows a cover on mini outing cards', async ({ page }) => {
+    // The demo coffee is on a fixed date; read the page the day before, not «now».
+    await page.clock.setFixedTime(new Date('2026-11-20T10:00:00+02:00'));
     await page.goto('/login');
     await page.evaluate((key) => {
       const raw = localStorage.getItem(key);
@@ -158,10 +160,13 @@ test.describe('Group outings', () => {
     await page.getByRole('button', { name: /Maria/ }).first().click();
     await expect(page.locator('#main-content')).toBeVisible();
     await page.goto('/plans');
-    const img = page.locator('img[alt="Καφές στο Κουκάκι"]');
+    const card = page.locator('#main-content .nakamas-card').filter({ hasText: 'Καφές στο Κουκάκι' }).first();
+    await expect(card).toBeVisible();
+    // Full photo depth puts the title on a covering button, so the cover img is decorative.
+    const img = card.locator('img[src*="/covers/coffee.jpg"]');
     await expect(img).toBeVisible();
-    await expect(img).toHaveAttribute('src', /\/covers\/coffee\.jpg/);
     await expect(img).toHaveJSProperty('naturalWidth', 1200);
+    await expect(card.getByRole('button', { name: 'Καφές στο Κουκάκι' })).toBeVisible();
   });
 
   test('members keep Our night and cannot fake a second group', async ({ page }) => {
