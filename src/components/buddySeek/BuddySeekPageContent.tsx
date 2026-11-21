@@ -30,13 +30,13 @@ import { hasUsualHours, matchesUsualHours } from '../../lib/quietCatalog';
 import {
   BuddySeekFilterBar,
   BuddySeekPageActions,
-  BuddySeekVibeNudge,
   type BuddySeekFilterKey,
 } from './BuddySeekChrome';
 import { formatLocationArea } from '../../lib/eventDisplay';
 import { formatPlanWhen } from '../../lib/dateLocale';
 import { DiscoverCardImagePicker } from '../home/DiscoverCardImagePicker';
 import { useDiscoverCardImageDepth } from '../../hooks/useDiscoverCardImageDepth';
+import { countNoun } from '../../lib/plural';
 
 function joinStatusLabel(status: CompanyJoinRequestStatus, t: (el: string, en: string) => string) {
   switch (status) {
@@ -174,7 +174,7 @@ export default function BuddySeekPageContent() {
     titleEl: 'Βρες Nakamas',
     titleEn: 'Find Nakamas',
     state: filter,
-    summaryEl: `${filtered.length} παρέες · ${pendingForMe.length} αιτήματα προς εσένα`,
+    summaryEl: `${countNoun(filtered.length, 'παρέα', 'παρέες')} · ${countNoun(pendingForMe.length, 'αίτημα', 'αιτήματα')} προς εσένα`,
     summaryEn: `${filtered.length} looking · ${pendingForMe.length} requests for you`,
     visibleIds: visibleSeeks.slice(0, 8).map((i) => i.intent.id),
   });
@@ -184,12 +184,6 @@ export default function BuddySeekPageContent() {
       <header className="space-y-3">
         <div className="space-y-1.5">
           <h1 className={cn(APP_TYPO.pageTitle, a.head)}>{t('Βρες Nakamas', 'Find Nakamas')}</h1>
-          <p className={cn('text-xs font-medium leading-relaxed', a.muted)}>
-            {t(
-              'Άτομα που ψάχνουν παρέα για εκδήλωση. Τα βράδια που έκλεισες είναι στα Σχέδιά σου· καφές ή βόλτα δίπλα σου είναι στο «Βρες παρέα».',
-              'People looking for company at an event. Nights you booked live in My Plans; coffee or a walk next to you is in “Find company”.',
-            )}
-          </p>
           <PlansFormingValueHero insights={feed.insights} />
         </div>
         {/* StatsBar omitted when ValueHero already states compatible count — less chrome. */}
@@ -201,18 +195,9 @@ export default function BuddySeekPageContent() {
           onNewRequest={() => setEventPickerOpen(true)}
           onMyPlans={() => navigate('/plans')}
           onNearbyNow={() => setSheetOpen(true)}
+          onVibe={currentUser && !currentUser.vibe ? () => navigate('/profile') : undefined}
         />
-        {/* A small nudge belongs with the page links, not a section of its own. */}
-        {currentUser && !currentUser.vibe && (
-          <BuddySeekVibeNudge onClick={() => navigate('/profile')} />
-        )}
       </header>
-
-      <DiscoverCardImagePicker
-        depth={cardImage.depth}
-        options={cardImage.options}
-        onChange={cardImage.setDepth}
-      />
 
       {feed.myActivePlan && (
         <PlansFormingYourPlanBanner
@@ -287,7 +272,9 @@ export default function BuddySeekPageContent() {
         </section>
       )}
 
-      <div ref={filterBarRef} className="scroll-mt-4">
+      {/* Filters and the card-photo choice share one row. */}
+      <div ref={filterBarRef} className="scroll-mt-4 flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0 flex-1">
         <BuddySeekFilterBar
           filter={filter}
           filterCounts={filterCounts}
@@ -308,6 +295,12 @@ export default function BuddySeekPageContent() {
           }}
           onChange={setFilter}
         />
+        </div>
+        <DiscoverCardImagePicker
+          depth={cardImage.depth}
+          options={cardImage.options}
+          onChange={cardImage.setDepth}
+        />
       </div>
 
       <ResourceStateGate
@@ -325,8 +318,10 @@ export default function BuddySeekPageContent() {
             <section className="space-y-5">
               <PlansFormingSectionTitle
                 title={t('Αιτήματα Nakamas', 'Nakama requests')}
-                subtitle={t(`${visibleSeeks.length} αποτελέσματα`, `${visibleSeeks.length} results`)}
+                subtitle={t(countNoun(visibleSeeks.length, 'αποτέλεσμα', 'αποτελέσματα'), countNoun(visibleSeeks.length, 'result', 'results'))}
               />
+              {/* Same grid as My Plans: one column on phones, 2–3 on wider screens. */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {visibleSeeks.map((item) => (
                 <PlansFormingCard
                   key={item.intent.id}
@@ -341,6 +336,7 @@ export default function BuddySeekPageContent() {
                   }}
                 />
               ))}
+              </div>
             </section>
           )}
           {queuedItems.length > 0 && (
@@ -364,9 +360,11 @@ export default function BuddySeekPageContent() {
           {recruitingGroups.length > 0 && (
             <section className="space-y-5">
               <PlansFormingSectionTitle title={t('Ομάδες με ανοιχτές θέσεις', 'Groups with open spots')} />
-              {recruitingGroups.map((entry) => (
-                <PlansFormingGroupCard key={entry.group.id} entry={entry} variant="page" imageDepth={cardImage.depth} />
-              ))}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {recruitingGroups.map((entry) => (
+                  <PlansFormingGroupCard key={entry.group.id} entry={entry} variant="page" imageDepth={cardImage.depth} />
+                ))}
+              </div>
             </section>
           )}
         </>

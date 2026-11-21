@@ -131,6 +131,7 @@ export function PostReactionBar({
     <div className={cn('mt-2 border-t border-border pt-1', canComment && 'grid grid-cols-2 gap-1')}>
       <div
         ref={wrapRef}
+        role="presentation"
         className="relative"
         onMouseEnter={() => {
           cancelClose();
@@ -140,7 +141,7 @@ export function PostReactionBar({
       >
         {open && (
           <div
-            role="group"
+            role="toolbar"
             aria-label={t('Διάλεξε αντίδραση', 'Choose a reaction')}
             onKeyDown={onTrayKeyDown}
             className="absolute bottom-full left-1/2 z-20 flex -translate-x-1/2 items-center gap-0.5 rounded-full border border-border bg-surface-raised px-1.5 py-1 mb-1 shadow-soft-lg after:absolute after:left-0 after:right-0 after:top-full after:h-2 after:content-['']"

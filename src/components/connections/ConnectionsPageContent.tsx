@@ -357,7 +357,7 @@ export default function ConnectionsPageContent() {
           onClick={() => setActiveTab('requests')}
         >
           {t('Αιτήματα', 'Requests')}
-          {pendingRequests.length > 0 && <span className={`${a.requestBadge} text-white text-2xs min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center`}>{pendingRequests.length}</span>}
+          {pendingRequests.length > 0 && <span className={`${a.requestBadge} text-white text-count min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center`}>{pendingRequests.length}</span>}
         </button>
         <button
           type="button"
@@ -367,7 +367,7 @@ export default function ConnectionsPageContent() {
           onClick={() => setActiveTab('suggested')}
         >
           <UserPlus className="w-3.5 h-3.5" aria-hidden /> {t('Προτάσεις', 'Suggested')}
-          {suggested.length > 0 && <span className={`${a.isDark ? 'bg-gray-600' : 'bg-gray-400'} text-white text-2xs min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center`}>{suggested.length}</span>}
+          {suggested.length > 0 && <span className={`${a.isDark ? 'bg-gray-600' : 'bg-gray-400'} text-white text-count min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center`}>{suggested.length}</span>}
         </button>
       </div>
 
@@ -437,7 +437,7 @@ export default function ConnectionsPageContent() {
                 </div>
                 <div className="min-w-0">
                   <h3 className={`font-bold text-sm truncate ${a.head} ${a.hoverText} transition-colors`}>
-                    <button type="button" className="max-w-full truncate text-left rounded-sm outline-none focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current" onClick={(e) => { e.stopPropagation(); handleViewProfile(conn); }}>
+                    <button type="button" className="-my-1.5 max-w-full truncate py-1.5 text-left rounded-sm outline-none focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current" onClick={(e) => { e.stopPropagation(); handleViewProfile(conn); }}>
                       {conn.name}
                     </button>
                   </h3>
@@ -617,7 +617,7 @@ export default function ConnectionsPageContent() {
                     <PersonAvatar user={user} className="h-12 w-12 text-xs" />
                     <div className="min-w-0">
                       <h3 className={`font-bold text-sm truncate ${a.head} ${a.hoverText} transition-colors`}>
-                        <button type="button" className="max-w-full truncate text-left rounded-sm outline-none focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current" onClick={(e) => { e.stopPropagation(); handleViewProfile(user); }}>
+                        <button type="button" className="-my-1.5 max-w-full truncate py-1.5 text-left rounded-sm outline-none focus-visible:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-current" onClick={(e) => { e.stopPropagation(); handleViewProfile(user); }}>
                           {user.name}
                         </button>
                       </h3>

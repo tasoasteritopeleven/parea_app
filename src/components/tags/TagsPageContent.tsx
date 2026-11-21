@@ -161,7 +161,9 @@ export default function TagsPageContent() {
         aria-label={
           active
             ? t(`Αφαίρεση ${label}`, `Remove ${label}`)
-            : t(`Προσθήκη ${label}, ${item.count} εκδηλώσεις`, `Add ${label}, ${item.count} events`)
+            : item.count === 1
+              ? t(`Προσθήκη ${label}, 1 εκδήλωση`, `Add ${label}, 1 event`)
+              : t(`Προσθήκη ${label}, ${item.count} εκδηλώσεις`, `Add ${label}, ${item.count} events`)
         }
         title={`${label} · ${item.count}`}
         className={chipClass(active)}
@@ -224,10 +226,6 @@ export default function TagsPageContent() {
             character="explorer"
             icon={Hash}
             title={t('Δεν υπάρχουν εκδηλώσεις με αυτές τις ετικέτες', 'No events with these tags')}
-            description={t(
-              'Βγάλε μία ετικέτα ή διάλεξε άλλες από το ευρετήριο από κάτω.',
-              'Remove a tag or pick others from the index below.',
-            )}
             actionLabel={t('Όλες οι ετικέτες', 'All tags')}
             onAction={() => navigate('/tags')}
           />
@@ -331,14 +329,14 @@ export default function TagsPageContent() {
       {showLetterJump ? (
         <nav
           aria-label={t('Ευρετήριο γραμμάτων', 'Letter index')}
-          className="flex flex-wrap gap-1"
+          className="-mx-4 flex gap-1 overflow-x-auto scrollbar-hide px-4 md:mx-0 md:flex-wrap md:px-0"
         >
           {letterGroups.map((group) => (
             <button
               key={group.letter}
               type="button"
               onClick={() => scrollToLetter(group.letter)}
-              className="inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-1.5 text-xs font-bold text-ink-muted hover:bg-surface-raised hover:text-ink"
+              className="inline-flex h-8 min-w-8 shrink-0 items-center justify-center rounded-lg px-1.5 text-xs font-bold text-ink-muted hover:bg-surface-raised hover:text-ink"
             >
               {group.letter}
             </button>

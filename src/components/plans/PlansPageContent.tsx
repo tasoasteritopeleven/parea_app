@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card } from '../common/Card';
-import { MessageCircle, MapPin, Calendar, Clock, ShieldAlert, CheckCircle, XCircle, Users, CalendarClock, CalendarCheck, Compass, PartyPopper } from 'lucide-react';
+import { MessageCircle, MapPin, Calendar, Clock, ShieldAlert, CheckCircle, XCircle, Users, CalendarClock, CalendarCheck, Compass, PartyPopper, ChevronDown } from 'lucide-react';
 import { useStore } from '../../store';
 import { Link, useNavigate } from 'react-router-dom';
 import { parseISO, differenceInDays } from 'date-fns';
@@ -27,6 +27,8 @@ import { useDiscoverCardImageDepth } from '../../hooks/useDiscoverCardImageDepth
 import { CardImageDepthFrame } from '../events/CardImageDepthFrame';
 import { cardImageDepthFlags } from '../../lib/discoverCardImagePreview';
 import { GroupProgressBar } from '../events/GroupProgressBar';
+import { EventCoverImg } from '../common/EventCoverImg';
+import { useIsMobile } from '../../hooks/use-mobile';
 
 function getUserGroupForEvent(eventId: string, groups: Group[], userId: string | undefined) {
   if (!userId) return undefined;
@@ -36,6 +38,9 @@ function getUserGroupForEvent(eventId: string, groups: Group[], userId: string |
 function getPendingGroupForEvent(eventId: string, groups: Group[]) {
   return groups.find((g) => g.eventId === eventId && g.status === 'pending');
 }
+
+/** Phones show this many upcoming plans as cards; the rest wait in a short list. */
+const PLAN_CARDS_FIRST = 3;
 
 function isPlansFormingGroupId(groupId: string) {
   return groupId.startsWith('g_plan_') || groupId.startsWith('g_merged_') || groupId.startsWith('g_coord_');
@@ -48,6 +53,9 @@ export default function PlansPageContent() {
   const flags = cardImageDepthFlags(cardImage.depth);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'pending' | 'past'>('upcoming');
   const [showLeaveConfirm, setShowLeaveConfirm] = useState<string | null>(null);
+  // Phones: after the next 3 plans, the rest wait in a short list and open into a card.
+  const isMobile = useIsMobile();
+  const [openedPlans, setOpenedPlans] = useState<Set<string>>(() => new Set());
   const [nowMs, setNowMs] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
@@ -77,6 +85,10 @@ export default function PlansPageContent() {
     const start = eventStartMs(e);
     return isLiveCatalogEvent(e) && start !== null && start >= nowMs && userGroupEventIds.includes(e.id);
   }).sort((a, b) => (eventStartMs(a) ?? 0) - (eventStartMs(b) ?? 0));
+  const upcomingLater = isMobile
+    ? upcomingEvents.slice(PLAN_CARDS_FIRST).filter((e) => !openedPlans.has(e.id))
+    : [];
+  const upcomingCards = upcomingEvents.filter((e) => !upcomingLater.includes(e));
 
   const pendingEvents = events.filter(e => waitlistedEvents.includes(e.id) && !userGroupEventIds.includes(e.id));
 
@@ -130,12 +142,6 @@ export default function PlansPageContent() {
     <div className="mx-auto max-w-full space-y-4 md:space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
         <h1 className={cn(PLANS_TYPO.pageTitle, p.head)}>{t(`Τα Σχέδιά μου`, `My Plans`)}</h1>
-        <p className={cn('mt-1 text-xs font-medium leading-relaxed', p.muted)}>
-          {t(
-            'Τα βράδια που έχεις ήδη κλείσει. Για παρέα σε εκδήλωση πήγαινε στο Βρες Nakamas· για κάτι δίπλα σου τώρα, άνοιξε «Βρες παρέα».',
-            'Nights you already booked. For company at an event go to Find Nakamas; for something next to you now, open “Find company”.',
-          )}
-        </p>
       </div>
       <DiscoverCardImagePicker
         depth={cardImage.depth}
@@ -193,7 +199,7 @@ export default function PlansPageContent() {
       >
       {activeTab === 'upcoming' && (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {upcomingEvents.map(event => {
+        {upcomingCards.map(event => {
           const group = getUserGroupForEvent(event.id, groups, currentUser?.id);
           const memberUsers = (group?.members ?? [])
             .slice(0, 3)
@@ -203,7 +209,7 @@ export default function PlansPageContent() {
           const hasMeetingPoint = Boolean(group?.meetingPoint);
 
           return (
-          <Card key={event.id} className="!rounded-2xl p-0 overflow-hidden flex h-full flex-col">
+          <Card key={event.id} id={`plan-${event.id}`} className="!rounded-2xl p-0 overflow-hidden flex h-full flex-col scroll-mt-20">
             <CardImageDepthFrame
               event={event}
               depth={cardImage.depth}
@@ -261,9 +267,12 @@ export default function PlansPageContent() {
                           <PersonAvatar key={user!.id} user={user!} size="sm" className="h-6 w-6 ring-1 ring-white/40" />
                         ))}
                       </div>
-                      <span className="text-xs font-medium flex items-center gap-0.5 text-white/85">
-                        <Users className="w-3 h-3" /> {group.members.length}/{group.targetSize} {t('μέλη', 'members')}
-                      </span>
+                      {/* With the progress bar on the photo, the count is said once, there. */}
+                      {!flags.coverProgress && (
+                        <span className="text-xs font-medium flex items-center gap-0.5 text-white/85">
+                          <Users className="w-3 h-3" /> {group.members.length}/{group.targetSize} {t('μέλη', 'members')}
+                        </span>
+                      )}
                     </div>
                   )}
                   {flags.coverRoomy && <div className="min-h-16 flex-1" aria-hidden />}
@@ -293,7 +302,7 @@ export default function PlansPageContent() {
                                 onClick={() => navigate(`/chat/${group.id}`)}
                                 className="min-h-8 px-3 rounded-xl text-xs font-bold text-white/90 border border-white/30"
                               >
-                                {t('Chat', 'Chat')}
+                                {t('Συνομιλία', 'Chat')}
                               </button>
                             </>
                           )}
@@ -385,7 +394,7 @@ export default function PlansPageContent() {
                   disabled={!group}
                   className={cn(secondaryBtn, 'flex-1 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed')}
                 >
-                  <MessageCircle className="h-3.5 w-3.5" /> {t('Chat', 'Chat')}
+                  <MessageCircle className="h-3.5 w-3.5" /> {t('Συνομιλία', 'Chat')}
                 </button>
                 {/* Leaving stays one tap away, but quiet: it is confirmed in a dialog. */}
                 <button
@@ -404,6 +413,45 @@ export default function PlansPageContent() {
           </Card>
           );
         })}
+
+        {upcomingLater.length > 0 && (
+          <section className="col-span-full" aria-labelledby="plans-later">
+            <h2 id="plans-later" className={cn('mb-2 text-xs font-semibold tracking-wide', p.muted)}>
+              {tu('Αργότερα', 'Later')}
+            </h2>
+            <ul className={cn('divide-y overflow-hidden rounded-2xl border', p.borderT, 'bg-surface-raised')}>
+              {upcomingLater.map((event) => {
+                const group = getUserGroupForEvent(event.id, groups, currentUser?.id);
+                const isConfirmed = group?.status === 'confirmed';
+                return (
+                  <li key={event.id}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpenedPlans((prev) => new Set(prev).add(event.id));
+                        requestAnimationFrame(() =>
+                          document.getElementById(`plan-${event.id}`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }),
+                        );
+                      }}
+                      aria-expanded={false}
+                      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-surface"
+                    >
+                      <EventCoverImg event={event} alt="" className="h-12 w-12 shrink-0 rounded-xl object-cover" />
+                      <span className="min-w-0 flex-1">
+                        <span className={cn('block truncate text-sm font-bold', p.head)}>{event.title}</span>
+                        <span className={cn('block text-xs font-medium', p.muted)}>
+                          {formatPlanWhen(event.date, event.time, language)} ·{' '}
+                          {isConfirmed ? t('Επιβεβαιωμένο', 'Confirmed') : t('Εκκρεμής', 'Pending')}
+                        </span>
+                      </span>
+                      <ChevronDown className="h-4 w-4 shrink-0 text-ink-muted" aria-hidden />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {upcomingEvents.length === 0 && (
           <div className="col-span-full">
@@ -443,6 +491,7 @@ export default function PlansPageContent() {
             <CardImageDepthFrame
               event={event}
               depth={cardImage.depth}
+              onPhotoClick={() => navigate(`/events/${event.id}`)}
               grayscale
               top={
                 <div className="absolute top-2 left-2 z-10 bg-gray-800/90 text-white px-2 py-0.5 rounded-lg text-2xs font-bold tracking-wide">
@@ -543,8 +592,8 @@ export default function PlansPageContent() {
         {pendingEvents.length === 0 && (
           <div className="col-span-full">
             <EmptyState
-              character="crew"
               icon={Clock}
+              character="crew"
               title={t('Καμία εκκρεμής ομάδα', 'No pending groups')}
               actionLabel={t('Ανακάλυψη', 'Discover')}
               onAction={() => navigate('/')}
@@ -565,7 +614,9 @@ export default function PlansPageContent() {
         {needsRating > 0 && (
           <div className={cn('col-span-full text-xs font-semibold flex items-center gap-1.5', p.muted)}>
             <ShieldAlert className="w-3.5 h-3.5 text-amber-500" />
-            {t(`${needsRating} εκδηλώσεις περιμένουν την αξιολόγησή σου`, `${needsRating} event(s) awaiting your feedback`)}
+            {needsRating === 1
+              ? t('1 εκδήλωση περιμένει την αξιολόγησή σου', '1 event awaiting your feedback')
+              : t(`${needsRating} εκδηλώσεις περιμένουν την αξιολόγησή σου`, `${needsRating} events awaiting your feedback`)}
           </div>
         )}
         {pastEvents.map((event) => (
@@ -573,6 +624,7 @@ export default function PlansPageContent() {
             <CardImageDepthFrame
               event={event}
               depth={cardImage.depth}
+              onPhotoClick={() => navigate(`/events/${event.id}`)}
               overlay={
                 <>
                   <h3 className={cn(PLANS_TYPO.cardTitle, 'text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.75)]')}>{event.title}</h3>
@@ -600,10 +652,12 @@ export default function PlansPageContent() {
               }
             >
             <div className="flex flex-1 flex-col gap-3.5 px-4 py-4">
-              <div className={cn('flex items-center gap-2 text-xs font-bold', p.muted)}>
-                <Calendar className="w-3.5 h-3.5" />
-                {formatPlanWhen(event.date, event.time, language)}
-              </div>
+              {!flags.coverFacts && (
+                <div className={cn('flex items-center gap-2 text-xs font-bold', p.muted)}>
+                  <Calendar className="w-3.5 h-3.5" />
+                  {formatPlanWhen(event.date, event.time, language)}
+                </div>
+              )}
               {!flags.coverTitle && <h3 className={cn(PLANS_TYPO.cardTitle, p.head)}>{event.title}</h3>}
 
               {!feedbackSubmitted[event.id] ? (
@@ -626,8 +680,8 @@ export default function PlansPageContent() {
         {pastEvents.length === 0 && (
           <div className="col-span-full">
             <EmptyState
-              character="spark"
               icon={CalendarCheck}
+              character="spark"
               title={t('Κανένα ολοκληρωμένο σχέδιο', 'No completed plans yet')}
               actionLabel={t('Ανακάλυψη', 'Discover')}
               onAction={() => navigate('/')}

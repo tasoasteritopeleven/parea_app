@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
 import {
   Reply,
   Pin,
@@ -15,6 +15,7 @@ import { useLanguage } from '../../lib/i18n';
 import type { ChatMessage } from '../../types/chat';
 import { QUICK_REACTIONS } from '../../lib/chatMediaCatalog';
 import { cn } from '../../lib/utils';
+import { redundantClick } from '../../lib/a11y';
 import { CHAT_TYPO } from '../../lib/typographyTokens';
 import { localizeSystemBody } from '../../lib/chatSystemCopy';
 
@@ -243,6 +244,18 @@ export function ChatMessageBubble({
     ? message.poll.options.reduce((acc, o) => acc + o.voterIds.length, 0)
     : 0;
 
+  // Click and long-press/right-click select the message; keyboards use the message actions button.
+  const bubblePointer = {
+    ...redundantClick<HTMLDivElement>((event) => {
+      if ((event.target as HTMLElement).closest('button, a, input, textarea')) return;
+      toggleSelect();
+    }),
+    onContextMenu: (event: ReactMouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      toggleSelect();
+    },
+  };
+
   return (
     <div
       id={`msg-${message.id}`}
@@ -252,14 +265,7 @@ export function ChatMessageBubble({
         compact ? 'max-w-[92%]' : 'max-w-[85%] sm:max-w-[75%]',
         mine ? 'ml-auto items-end' : 'items-start',
       )}
-      onClick={(event) => {
-        if ((event.target as HTMLElement).closest('button, a, input, textarea')) return;
-        toggleSelect();
-      }}
-      onContextMenu={(event) => {
-        event.preventDefault();
-        toggleSelect();
-      }}
+      {...bubblePointer}
     >
       <button
         type="button"
@@ -475,7 +481,7 @@ export function ChatMessageBubble({
               onClick={() => setReactOpen((v) => !v)}
               aria-label={t('Αντίδραση', 'React')}
               title={t('Αντίδραση', 'React')}
-              className="p-1 rounded-full text-ink-muted hover:bg-ink/10 hover:text-ink"
+              className="tap-area-y p-1 rounded-full text-ink-muted hover:bg-ink/10 hover:text-ink"
             >
               <SmilePlus className="w-3.5 h-3.5" />
             </button>
@@ -507,7 +513,7 @@ export function ChatMessageBubble({
             onClick={() => onReply(message)}
             aria-label={t('Απάντηση', 'Reply')}
             title={t('Απάντηση', 'Reply')}
-            className="p-1 rounded-full text-ink-muted hover:bg-ink/10 hover:text-ink"
+            className="tap-area-y p-1 rounded-full text-ink-muted hover:bg-ink/10 hover:text-ink"
           >
             <Reply className="w-3.5 h-3.5" />
           </button>
@@ -518,7 +524,7 @@ export function ChatMessageBubble({
               aria-label={t('Καρφίτσωμα', 'Pin')}
               title={t('Καρφίτσωμα', 'Pin')}
               className={cn(
-                'p-1 rounded-full hover:bg-ink/10',
+                'tap-area-y p-1 rounded-full hover:bg-ink/10',
                 message.pinned ? 'text-amber-500' : 'text-ink-muted hover:text-ink',
               )}
             >
@@ -534,7 +540,7 @@ export function ChatMessageBubble({
               }}
               aria-label={t('Επεξεργασία', 'Edit')}
               title={t('Επεξεργασία', 'Edit')}
-              className="p-1 rounded-full text-ink-muted hover:bg-ink/10 hover:text-ink"
+              className="tap-area-y p-1 rounded-full text-ink-muted hover:bg-ink/10 hover:text-ink"
             >
               <Pencil className="w-3 h-3" />
             </button>
@@ -545,7 +551,7 @@ export function ChatMessageBubble({
               onClick={() => onDelete(message.id)}
               aria-label={t('Διαγραφή', 'Delete')}
               title={t('Διαγραφή', 'Delete')}
-              className="p-1 rounded-full text-ink-muted hover:bg-red-50 hover:text-red-600"
+              className="tap-area-y p-1 rounded-full text-ink-muted hover:bg-red-50 hover:text-red-600"
             >
               <Trash2 className="w-3 h-3" />
             </button>
@@ -564,7 +570,7 @@ export function ChatMessageBubble({
                 type="button"
                 onClick={() => onReact(message.id, em)}
                 className={cn(
-                  'tap-area-y inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-2xs font-bold border transition-colors',
+                  'tap-area-y inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-count font-bold border transition-colors',
                   reacted
                     ? 'border-brand bg-brand-soft text-brand'
                     : 'border-border bg-surface-raised text-ink-muted hover:border-border-strong',

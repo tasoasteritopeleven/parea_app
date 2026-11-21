@@ -80,7 +80,7 @@ export function GroupChatStatusStrip({
             <button
               type="button"
               onClick={() => setKeepOpen(true)}
-              className="shrink-0 font-bold text-ink hover:underline underline-offset-2"
+              className="tap-area-y shrink-0 font-bold text-ink hover:underline underline-offset-2"
             >
               {t('Διατήρηση', 'Keep')}
             </button>
@@ -96,7 +96,7 @@ export function GroupChatStatusStrip({
                 });
               }}
               aria-label={t('Απόκρυψη', 'Dismiss')}
-              className="shrink-0 p-0.5 rounded-full hover:bg-ink/5"
+              className="tap-area shrink-0 p-0.5 rounded-full hover:bg-ink/5"
             >
               <X className="w-3 h-3" />
             </button>
