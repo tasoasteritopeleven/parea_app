@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   formatEventPrice,
   formatLocationArea,
+  locationMatchesQuery,
+  selectMyEventGroups,
   getEventJoinState,
   isEventImminent,
   isEventPast,
@@ -62,7 +64,7 @@ describe('eventDisplay', () => {
   });
 
   it('formats Greek euro amounts with a decimal comma', () => {
-    expect(formatEventPrice(event(), 'el')).toBe('8,50 €');
+    expect(formatEventPrice(event(), 'el')).toBe('8,50\u00a0€');
     expect(formatEventPrice(event(), 'en')).toBe('€8.50');
     expect(formatEventPrice(event({ isPaid: false, price: 0 }), 'el')).toBe('Δωρεάν');
   });
@@ -72,9 +74,38 @@ describe('eventDisplay', () => {
     expect(formatLocationArea('Thisio, Athens', 'en')).toBe('Thisio, Athens');
     expect(formatLocationArea('Koukaki, Athens', 'el')).toBe('Κουκάκι, Αθήνα');
     expect(formatLocationArea('Zappeio, Athens', 'el')).toBe('Ζάππειο, Αθήνα');
+    expect(formatLocationArea('Plaka, Athens', 'el')).toBe('Πλάκα, Αθήνα');
+    expect(formatLocationArea('Syntagma, Athens', 'el')).toBe('Σύνταγμα, Αθήνα');
+    expect(locationMatchesQuery('Thisio, Athens', 'θησείο', 'el')).toBe(true);
+    expect(locationMatchesQuery('Thisio, Athens', 'thisio', 'el')).toBe(true);
+    expect(locationMatchesQuery('Athens', 'αθήνα', 'el')).toBe(true);
+    expect(locationMatchesQuery('Athens', 'ΑΘΗΝΑ', 'el')).toBe(true);
+    expect(locationMatchesQuery('Thisio, Athens', 'ΘΗΣΕΙΟ', 'el')).toBe(true);
+    expect(locationMatchesQuery('Thisio, Athens', 'κουκάκι', 'el')).toBe(false);
     expect(translateEventTag('boardgames', (el) => el)).toBe('Επιτραπέζια');
     expect(translateEventTag('board games', (_el, en) => en)).toBe('Board games');
     expect(translateEventTag('nakamas nights', (el) => el)).toBe('Nakamas Nights');
+  });
+
+  it('prefers membership over an earlier waitlist row for the same event', () => {
+    const waitlisted = {
+      id: 'g-wait',
+      eventId: 'e1',
+      status: 'pending' as const,
+      members: ['u2'],
+      waitlist: ['u1'],
+    };
+    const member = {
+      id: 'g-mine',
+      eventId: 'e1',
+      status: 'pending' as const,
+      members: ['u1'],
+      waitlist: [],
+    };
+    const picked = selectMyEventGroups([waitlisted, member], 'e1', 'u1');
+    expect(picked.member?.id).toBe('g-mine');
+    expect(picked.waitlisted?.id).toBe('g-wait');
+    expect(picked.member ?? picked.waitlisted).toEqual(member);
   });
 
   it('ties the card action to date and membership, not the title', () => {
@@ -109,5 +140,12 @@ describe('eventDisplay', () => {
         now,
       }),
     ).toBe('join');
+  });
+
+  it('keeps a plan later today upcoming (date and time, not date alone)', () => {
+    const morning = new Date(2026, 10, 21, 9, 6);
+    expect(isEventPast({ date: '2026-11-21', time: '11:00' }, morning)).toBe(false);
+    expect(isEventPast({ date: '2026-11-21', time: '08:00' }, morning)).toBe(true);
+    expect(isEventPast({ date: '2026-11-20', time: '23:30' }, morning)).toBe(true);
   });
 });

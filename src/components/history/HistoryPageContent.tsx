@@ -16,6 +16,7 @@ import { formatPlanWhen } from '../../lib/dateLocale';
 import { EventCoverImg } from '../common/EventCoverImg';
 import { usePublishPageSnapshot } from '../../hooks/usePublishPageSnapshot';
 import { useCategoryLabel } from '../../hooks/useCategoryLabel';
+import { formatLocationArea, locationMatchesQuery } from '../../lib/eventDisplay';
 
 export default function HistoryPageContent() {
   const { t, language } = useLanguage();
@@ -51,13 +52,13 @@ export default function HistoryPageContent() {
       list = list.filter(
         (e) =>
           e.title.toLowerCase().includes(q) ||
-          e.locationArea.toLowerCase().includes(q),
+          locationMatchesQuery(e.locationArea, q, language),
       );
     }
     if (tab === 'reviewed') list = list.filter((e) => Boolean(feedbackSubmitted[e.id]));
     if (tab === 'pending') list = list.filter((e) => !feedbackSubmitted[e.id]);
     return list;
-  }, [allPastEvents, feedbackSubmitted, search, tab]);
+  }, [allPastEvents, feedbackSubmitted, language, search, tab]);
 
   const totalAttended = allPastEvents.length;
   const reviewedCount = allPastEvents.filter((e) => feedbackSubmitted[e.id]).length;
@@ -199,7 +200,7 @@ export default function HistoryPageContent() {
                     <span aria-hidden className="opacity-40">·</span>
                     <span className="inline-flex items-center gap-1 min-w-0">
                       <MapPin className="w-3 h-3 shrink-0 opacity-70" aria-hidden />
-                      <span className="truncate">{event.locationArea}</span>
+                      <span className="truncate">{formatLocationArea(event.locationArea, language)}</span>
                     </span>
                     {feedbackSubmitted[event.id] && (
                       <>

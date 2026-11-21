@@ -19,6 +19,7 @@ import type { Group } from '../../types';
 import { formatPlanWhen } from '../../lib/dateLocale';
 import { usePublishPageSnapshot } from '../../hooks/usePublishPageSnapshot';
 import { eventStartMs, LATE_CANCEL_MS } from '../../store/outingsSlice';
+import { isLiveCatalogEvent } from '../../lib/eventDisplay';
 import { EmptyState } from '../common/EmptyState';
 import { EventCoverImg } from '../common/EventCoverImg';
 import { formatCountdown } from '../../lib/countdown';
@@ -59,19 +60,23 @@ export default function PlansPageContent() {
 
   const now = new Date(nowMs);
   const userGroupEventIds = currentUser
-    ? groups.filter(g => g.members.includes(currentUser.id)).map(g => g.eventId)
+    ? groups
+        .filter((g) => g.status !== 'cancelled' && g.members.includes(currentUser.id))
+        .map((g) => g.eventId)
     : [];
 
+  // Date and time together: a plan later today is still upcoming, not history
+  // waiting for a rating (a date-only string parses as midnight UTC).
   const upcomingEvents = events.filter(e => {
     const start = eventStartMs(e);
-    return start !== null && start >= nowMs && userGroupEventIds.includes(e.id);
+    return isLiveCatalogEvent(e) && start !== null && start >= nowMs && userGroupEventIds.includes(e.id);
   }).sort((a, b) => (eventStartMs(a) ?? 0) - (eventStartMs(b) ?? 0));
 
   const pendingEvents = events.filter(e => waitlistedEvents.includes(e.id) && !userGroupEventIds.includes(e.id));
 
   const pastEvents = events.filter(e => {
     const start = eventStartMs(e);
-    return start !== null && start < nowMs && userGroupEventIds.includes(e.id);
+    return isLiveCatalogEvent(e) && start !== null && start < nowMs && userGroupEventIds.includes(e.id);
   }).sort((a, b) => (eventStartMs(b) ?? 0) - (eventStartMs(a) ?? 0));
 
   const needsRating = pastEvents.filter(e => !feedbackSubmitted[e.id]).length;
@@ -119,7 +124,6 @@ export default function PlansPageContent() {
     <div className="mx-auto max-w-full space-y-4 md:space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div>
         <h1 className={cn(PLANS_TYPO.pageTitle, p.head)}>{t(`Τα Σχέδιά μου`, `My Plans`)}</h1>
-        <p className={cn(PLANS_TYPO.pageSub, 'mt-1', p.sub)}>{t(`Οι βραδιές που έχεις κλείσει.`, `Nights you've booked.`)}</p>
       </div>
 
       {/* Next-event highlight */}
@@ -288,7 +292,7 @@ export default function PlansPageContent() {
               icon={Compass}
               character="explorer"
               title={t(`Κανένα επερχόμενο σχέδιο`, `No upcoming plans`)}
-              description={t('Βρες μια βραδιά στο Discover.', 'Find a night on Discover.')}
+              description={t('Βρες μια βραδιά στην Ανακάλυψη.', 'Find a night on Discover.')}
               actionLabel={t(`Ανακάλυψη`, `Discover`)}
               onAction={() => navigate('/')}
               askAi
@@ -321,7 +325,7 @@ export default function PlansPageContent() {
             <div className="relative h-48 w-full shrink-0 bg-gray-100 overflow-hidden grayscale">
               <EventCoverImg event={event} alt={event.title} className="w-full h-full object-cover" />
               <div className="absolute top-2 left-2 bg-gray-800/90 text-white px-2 py-0.5 rounded-lg text-2xs font-bold tracking-wide">
-                {t(`Εκκρεμής Ομάδα`, `Pending Group`)}
+                {t(`Εκκρεμής ομάδα`, `Pending Group`)}
               </div>
             </div>
 
@@ -474,7 +478,7 @@ export default function PlansPageContent() {
             }}
             className="w-full px-4 py-2 min-h-9 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-full transition-all duration-200 shadow-soft"
           >
-            {t('Ναι, Αποχώρηση', 'Yes, Leave')}
+            {t('Ναι, αποχώρηση', 'Yes, Leave')}
           </button>
           <button
             type="button"

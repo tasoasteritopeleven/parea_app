@@ -1,7 +1,18 @@
 import type { Event, Group, User } from '../types';
+import { formatEur } from './money';
 import { eventTagLabels } from './eventTags';
+import { foldSearchText } from './greekText';
 
 const LOCATION_EL: Record<string, string> = {
+  'Ilisia, Athens': 'Ιλίσια, Αθήνα',
+  'Metaxourgeio, Athens': 'Μεταξουργείο, Αθήνα',
+  'Mets, Athens': 'Μετς, Αθήνα',
+  'Pangrati, Athens': 'Παγκράτι, Αθήνα',
+  'Parnitha, Attica': 'Πάρνηθα, Αττική',
+  'Piraeus → Aegina': 'Πειραιάς → Αίγινα',
+  'Plaka, Athens': 'Πλάκα, Αθήνα',
+  'Syntagma, Athens': 'Σύνταγμα, Αθήνα',
+  'Vouliagmeni, Athens': 'Βουλιαγμένη, Αθήνα',
   'Thisio, Athens': 'Θησείο, Αθήνα',
   'Exarchia, Athens': 'Εξάρχεια, Αθήνα',
   'Kaisariani, Athens': 'Καισαριανή, Αθήνα',
@@ -92,15 +103,44 @@ export function formatEventPrice(
   freeEn = 'Free',
 ): string {
   if (!event.isPaid || event.price <= 0) return language === 'el' ? freeEl : freeEn;
-  if (language === 'el') {
-    return `${event.price.toLocaleString('el-GR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
-  }
-  return `€${event.price.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return formatEur(event.price, language);
 }
 
 export function formatLocationArea(area: string, language: 'el' | 'en'): string {
   if (language !== 'el') return area;
   return LOCATION_EL[area] ?? area.replace(/\bAthens\b/g, 'Αθήνα');
+}
+
+/** Search both the stored English place name and the localized label. */
+export function locationMatchesQuery(
+  area: string | undefined | null,
+  query: string,
+  language: 'el' | 'en',
+): boolean {
+  if (!area) return false;
+  const q = foldSearchText(query);
+  if (!q) return true;
+  if (foldSearchText(area).includes(q)) return true;
+  return foldSearchText(formatLocationArea(area, language)).includes(q);
+}
+
+/** Membership wins over an earlier waitlist row for the same event. */
+export function selectMyEventGroups<T extends {
+  eventId: string;
+  status?: string;
+  members: string[];
+  waitlist?: string[];
+}>(
+  groups: T[],
+  eventId: string | undefined,
+  userId: string | undefined,
+): { member: T | undefined; waitlisted: T | undefined } {
+  if (!eventId || !userId) return { member: undefined, waitlisted: undefined };
+  const live = groups.filter((g) => g.eventId === eventId && g.status !== 'cancelled');
+  return {
+    member: live.find((g) => g.members.includes(userId)),
+    waitlisted: live.find((g) => g.waitlist?.includes(userId)),
+  };
 }
 
 export function translateEventTag(

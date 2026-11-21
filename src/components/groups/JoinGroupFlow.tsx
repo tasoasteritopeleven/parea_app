@@ -14,11 +14,12 @@ import { VibeQuizModal } from '../outings/VibeQuizModal';
 import { fitsGenderMode } from '../../lib/outings';
 import type { GroupGenderMode } from '../../types/outings';
 import { isLiveCatalogEvent } from '../../lib/eventDisplay';
+import { formatEur } from '../../lib/money';
 
 export default function JoinGroupFlow() {
   const { eventId } = useParams();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [searchParams] = useSearchParams();
   const preSelectedGroupId = searchParams.get('group') ?? searchParams.get('groupId');
 
@@ -46,6 +47,14 @@ export default function JoinGroupFlow() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(preSelectedGroupId);
   const [commitmentAccepted, setCommitmentAccepted] = useState(false);
 
+  const myGroup = groups.find(
+    (g) =>
+      g.eventId === eventId &&
+      g.status !== 'cancelled' &&
+      currentUser != null &&
+      g.members.includes(currentUser.id),
+  );
+
   useEffect(() => {
     if (!eventId || !preSelectedGroupId) return;
     const match = groups.find(
@@ -56,6 +65,10 @@ export default function JoinGroupFlow() {
       setGroupType('existing');
     }
   }, [preSelectedGroupId, eventId, groups]);
+
+  useEffect(() => {
+    if (myGroup) setGroupType('existing');
+  }, [myGroup?.id]);
 
   if (!event || !eventId) return null;
   if (!isLiveCatalogEvent(event)) {
@@ -82,13 +95,14 @@ export default function JoinGroupFlow() {
   const fullGroups = groups.filter(
     (g) => g.eventId === eventId && g.members.length >= g.targetSize && g.status !== 'cancelled' && !g.members.includes(currentUser?.id ?? ''),
   );
-  const myGroup = groups.find((g) => g.eventId === eventId && currentUser && g.members.includes(currentUser.id));
   const selectedGate = selectedGroupId ? canJoinGroup(selectedGroupId) : null;
   const canWomenNb = fitsGenderMode(currentUser, 'women_nb');
 
   const canContinueStep1 =
     gate.allowed &&
-    (groupType === 'new' || (availableGroups.length > 0 && Boolean(selectedGroupId) && Boolean(selectedGate?.ok)));
+    (groupType === 'new'
+      ? !myGroup
+      : availableGroups.length > 0 && Boolean(selectedGroupId) && Boolean(selectedGate?.ok));
 
   const discountedPrice =
     event.isPaid && event.groupDiscount
@@ -125,12 +139,19 @@ export default function JoinGroupFlow() {
       joinGroup(target);
       setJoinedGroupId(target);
     } else {
+      if (myGroup) {
+        toast.error(
+          t('Είσαι ήδη σε ομάδα για αυτή την εκδήλωση.', 'You are already in a group for this event.'),
+        );
+        return;
+      }
       if (needsCommitment) placeCommitmentHold(eventId);
-      createGroup(event.id, newGroupSize, { genderMode });
-      const mine = useStore
-        .getState()
-        .groups.filter((g) => g.eventId === event.id && g.hostId === currentUser?.id);
-      setJoinedGroupId(mine[mine.length - 1]?.id ?? null);
+      const createdId = createGroup(event.id, newGroupSize, { genderMode });
+      if (!createdId) {
+        toast.error(t('Δεν ήταν δυνατή η δημιουργία ομάδας.', 'Could not create a group.'));
+        return;
+      }
+      setJoinedGroupId(createdId);
     }
     setStep(3);
   };
@@ -154,17 +175,13 @@ export default function JoinGroupFlow() {
             <p className="mt-1 text-sm text-gray-500 font-medium">{event.title}</p>
           </div>
 
-          <p className="text-xs font-medium p-3 bg-cyan-50 border border-cyan-100 rounded-xl text-cyan-900 leading-relaxed dark:bg-cyan-950/40 dark:border-cyan-800/50 dark:text-cyan-100">
-            {t(
-              'Συνιστάμε ομάδες 3–5 ατόμων — πιο ασφαλές και άνετο.',
-              'We recommend groups of 3–5 people — safer and more comfortable.',
-            )}
-            {event.isPaid && event.groupDiscount
-              ? ` ${t('Έκπτωση', 'Discount')} -${event.groupDiscount.percentage}% ${t('από', 'from')} ${event.groupDiscount.minSize}+ ${t('μέλη', 'members')}.`
-              : ''}
-          </p>
+          {event.isPaid && event.groupDiscount && (
+            <p className="text-xs font-medium p-3 bg-cyan-50 border border-cyan-100 rounded-xl text-cyan-900 leading-relaxed dark:bg-cyan-950/40 dark:border-cyan-800/50 dark:text-cyan-100">
+              {`${t('Έκπτωση', 'Discount')} −${event.groupDiscount.percentage}% ${t('από', 'from')} ${event.groupDiscount.minSize}+ ${t('μέλη', 'members')}`}
+            </p>
+          )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn('grid gap-3', myGroup ? 'grid-cols-1' : 'grid-cols-2')}>
             <button
               type="button"
               onClick={() => setGroupType('existing')}
@@ -173,14 +190,16 @@ export default function JoinGroupFlow() {
               <Users className={`h-4 w-4 mb-1.5 ${groupType === 'existing' ? 'text-cyan-600' : 'text-gray-400'}`} />
               <p className="font-bold text-xs">{t('Υπάρχουσα ομάδα', 'Join Existing')}</p>
             </button>
-            <button
-              type="button"
-              onClick={() => setGroupType('new')}
-              className={`p-3 rounded-xl border text-left text-xs min-h-[72px] ${groupType === 'new' ? 'border-accent bg-cyan-50 dark:bg-cyan-950/40 ring-1 ring-accent' : 'border-gray-100 dark:border-border'}`}
-            >
-              <Split className={`h-4 w-4 mb-1.5 ${groupType === 'new' ? 'text-cyan-600' : 'text-gray-400'}`} />
-              <p className="font-bold text-xs">{t('Νέα ομάδα', 'Start New Group')}</p>
-            </button>
+            {!myGroup && (
+              <button
+                type="button"
+                onClick={() => setGroupType('new')}
+                className={`p-3 rounded-xl border text-left text-xs min-h-[72px] ${groupType === 'new' ? 'border-accent bg-cyan-50 dark:bg-cyan-950/40 ring-1 ring-accent' : 'border-gray-100 dark:border-border'}`}
+              >
+                <Split className={`h-4 w-4 mb-1.5 ${groupType === 'new' ? 'text-cyan-600' : 'text-gray-400'}`} />
+                <p className="font-bold text-xs">{t('Νέα ομάδα', 'Start New Group')}</p>
+              </button>
+            )}
           </div>
 
           {groupType === 'existing' && (
@@ -312,7 +331,7 @@ export default function JoinGroupFlow() {
                   ))}
                 </div>
                 {!canWomenNb && (
-                  <p className="mt-1 text-2xs font-medium text-ink-muted dark:text-gray-300">
+                  <p className="mt-1 text-xs font-medium text-ink-muted dark:text-gray-300">
                     {t('Η επιλογή «Γυναίκες & μη δυαδικά» ανοίγει αν το δηλώσεις στο προφίλ σου (δεν εμφανίζεται δημόσια).', 'The “Women & non-binary” option opens if you set it in your profile (never shown publicly).')}
                   </p>
                 )}
@@ -344,7 +363,7 @@ export default function JoinGroupFlow() {
             <div className="p-4 rounded-xl border border-gray-100 bg-gray-50 space-y-2">
               <div className="flex justify-between text-sm font-medium">
                 <span>{t('Τιμή', 'Price')}</span>
-                <span>€{event.price}</span>
+                <span>{formatEur(event.price, language)}</span>
               </div>
               {event.groupDiscount && (
                 <div className="flex justify-between text-sm font-bold text-emerald-700">
@@ -352,10 +371,10 @@ export default function JoinGroupFlow() {
                     <Tag className="w-4 h-4" />
                     {t('Με ομαδική έκπτωση', 'With group discount')}
                   </span>
-                  <span>€{discountedPrice}</span>
+                  <span>{formatEur(Number(discountedPrice), language)}</span>
                 </div>
               )}
-              <p className="text-2xs text-gray-500">
+              <p className="text-xs text-gray-500">
                 {t(
                   'Προεξουσιοδότηση — χρέωση μόνο μετά την επιβεβαίωση της ομάδας.',
                   'Pre-authorization — charged only after group confirmation.',
