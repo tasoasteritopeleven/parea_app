@@ -128,7 +128,7 @@ export function PlansFormingCard({
   const role = onDark ? 'text-cyan-300' : 'text-cyan-700 dark:text-cyan-300';
   const pageIcon = (Icon: typeof Clock) =>
     variant === 'page' ? <Icon className="w-3 h-3 shrink-0 opacity-70" aria-hidden /> : null;
-  const depth = variant === 'page' ? imageDepth : 'photo';
+  const depth = variant === 'page' || variant === 'sheet' ? imageDepth : 'photo';
   const flags = cardImageDepthFlags(depth);
 
   if (quietLayout) {
@@ -146,7 +146,7 @@ export function PlansFormingCard({
           onPhotoClick={() => go(`/events/${item.event.id}`)}
           photoAriaLabel={t('Δες εκδήλωση', 'View event')}
           top={
-            variant === 'page' ? (
+            variant === 'page' || (variant === 'sheet' && flags.coverFull) ? (
               <div className="absolute top-3 right-3 z-10 flex gap-1">
                 <button
                   type="button"
@@ -206,6 +206,14 @@ export function PlansFormingCard({
                     right={t(item.groupSizeLabel.el, item.groupSizeLabel.en)}
                   />
                 </div>
+              )}
+              {flags.coverFull && (
+                <FactSpread
+                  mutedClass="text-white/85"
+                  left={t(item.meetingLabel.el, item.meetingLabel.en)}
+                  rightIcon={!interestLine && showUrgency ? pageIcon(Clock) : null}
+                  right={interestLine || (showUrgency ? t(item.urgency.el, item.urgency.en) : null)}
+                />
               )}
               {flags.coverRoomy && <div className="min-h-16 flex-1" aria-hidden />}
               {flags.coverFull && item.intent.message && (
@@ -315,12 +323,14 @@ export function PlansFormingCard({
               right={t(item.groupSizeLabel.el, item.groupSizeLabel.en)}
             />
             )}
+            {!flags.coverFull && (
             <FactSpread
               mutedClass={muted}
               left={t(item.meetingLabel.el, item.meetingLabel.en)}
               rightIcon={!interestLine && showUrgency ? pageIcon(Clock) : null}
               right={interestLine || (showUrgency ? t(item.urgency.el, item.urgency.en) : null)}
             />
+            )}
           </div>
 
           {item.intent.message && (
@@ -655,7 +665,7 @@ export function PlansFormingGroupCard({
   const ink = onDark ? 'text-white' : 'text-ink';
   const muted = onDark ? 'text-gray-400' : 'text-ink-muted';
   const role = onDark ? 'text-emerald-300' : 'text-emerald-700 dark:text-emerald-300';
-  const depth = variant === 'page' ? imageDepth : 'photo';
+  const depth = variant === 'page' || variant === 'sheet' ? imageDepth : 'photo';
   const flags = cardImageDepthFlags(depth);
 
   return (

@@ -44,7 +44,7 @@ export function MiniOutingsSection({
   imageDepth?: EventCardImageDepth;
 }) {
   const { t, language } = useLanguage();
-  const depth = variant === 'page' ? imageDepth : 'photo';
+  const depth = imageDepth;
   const flags = cardImageDepthFlags(depth);
   const navigate = useNavigate();
   const [composerOpen, setComposerOpen] = useState(false);
@@ -148,6 +148,24 @@ export function MiniOutingsSection({
             const full = group.members.length >= group.targetSize;
             const genderBlocked = group.genderMode === 'women_nb' && !fitsGenderMode(me, 'women_nb');
             const hostName = host?.name.split(' ')[0] ?? '—';
+            const refuseRestrictedOrJoin = () => {
+              if (genderBlocked) {
+                toast.message(
+                  t(
+                    'Αυτή η έξοδος είναι μόνο για γυναίκες και μη δυαδικά άτομα. Μπορείς να ενημερώσεις το προφίλ σου αν θες.',
+                    'This outing is for women and non-binary people only. You can update your profile if you want.',
+                  ),
+                  {
+                    action: {
+                      label: t('Προφίλ', 'Profile'),
+                      onClick: () => go('/profile'),
+                    },
+                  },
+                );
+                return;
+              }
+              join(group.id, event.id);
+            };
             return (
               <li
                 key={group.id}
@@ -176,6 +194,11 @@ export function MiniOutingsSection({
                       {flags.coverOrganizer && (
                         <p className="card-meta font-medium text-white/85">{t(`με ${hostName}`, `with ${hostName}`)}</p>
                       )}
+                      {flags.coverFull && group.genderMode === 'women_nb' && !genderBlocked && (
+                        <p className="card-meta font-medium text-white/85">
+                          {t('Γυναίκες & μη δυαδικά άτομα', 'Women & non-binary')}
+                        </p>
+                      )}
                       {flags.coverRoomy && <div className="min-h-16 flex-1" aria-hidden />}
                       {flags.coverProgress && (
                         <div className="mt-auto border-t border-white/25 pt-4">
@@ -195,18 +218,7 @@ export function MiniOutingsSection({
                                 size="sm"
                                 variant="ghost"
                                 className="text-white"
-                                onClick={() => {
-                                  if (genderBlocked) {
-                                    toast.message(
-                                      t(
-                                        'Αυτή η έξοδος είναι μόνο για γυναίκες και μη δυαδικά άτομα. Μπορείς να ενημερώσεις το προφίλ σου αν θες.',
-                                        'This outing is for women and non-binary people only. You can update your profile if you want.',
-                                      ),
-                                    );
-                                    return;
-                                  }
-                                  join(group.id, event.id);
-                                }}
+                                onClick={refuseRestrictedOrJoin}
                               >
                                 {genderBlocked ? t('Μόνο γυναίκες & μη δυαδικά', 'Women & non-binary only') : full ? t('Λίστα αναμονής', 'Join waitlist') : t('Μπες', 'Join')}
                               </Button>
@@ -252,7 +264,7 @@ export function MiniOutingsSection({
                 </div>
                 )}
                 {/* When the button already says «women & non-binary only», the line would repeat it. */}
-                {group.genderMode === 'women_nb' && !genderBlocked && (
+                {group.genderMode === 'women_nb' && !genderBlocked && !flags.coverFull && (
                   <p className="card-meta font-medium leading-relaxed text-ink">
                     {t('Γυναίκες & μη δυαδικά άτομα', 'Women & non-binary')}
                   </p>
@@ -272,24 +284,7 @@ export function MiniOutingsSection({
                       size="sm"
                       variant={genderBlocked || full ? 'ghost' : 'primary'}
                       className={genderBlocked || full ? 'text-ink' : undefined}
-                      onClick={() => {
-                        if (genderBlocked) {
-                          toast.message(
-                            t(
-                              'Αυτή η έξοδος είναι μόνο για γυναίκες και μη δυαδικά άτομα. Μπορείς να ενημερώσεις το προφίλ σου αν θες.',
-                              'This outing is for women and non-binary people only. You can update your profile if you want.',
-                            ),
-                            {
-                              action: {
-                                label: t('Προφίλ', 'Profile'),
-                                onClick: () => go('/profile'),
-                              },
-                            },
-                          );
-                          return;
-                        }
-                        join(group.id, event.id);
-                      }}
+                      onClick={refuseRestrictedOrJoin}
                     >
                       {genderBlocked ? t('Μόνο γυναίκες & μη δυαδικά', 'Women & non-binary only') : full ? t('Λίστα αναμονής', 'Join waitlist') : t('Μπες', 'Join')}
                     </Button>

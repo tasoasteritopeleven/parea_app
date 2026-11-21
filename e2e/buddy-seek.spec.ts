@@ -54,6 +54,13 @@ test.describe('Find Nakamas', () => {
     await expect(page.getByText('Chat πρώτα')).toHaveCount(0);
     await expect(page.getByText('Food & Drink')).toHaveCount(0);
     await expect(page.getByText(/Φαγητό δρόμου με μικρή ομάδα|Street food with a small group/)).toBeVisible();
+    await expect(page.getByText(/Καφές πριν|Coffee before/)).toBeVisible();
+
+    const restrictedOuting = page.locator('[data-mini-outing-card]').filter({ hasText: 'Τρέξιμο στο Ζάππειο' });
+    await restrictedOuting.getByRole('button', { name: /Μόνο γυναίκες & μη δυαδικά|Women & non-binary only/ }).click();
+    await page.locator('[data-sonner-toast]').getByRole('button', { name: /Προφίλ|Profile/ }).click();
+    await expect(page).toHaveURL(/\/profile/);
+    await page.goto('/buddy-seek');
 
     await page.getByRole('button', { name: /Νέο αίτημα από εκδήλωση|New request from event/ }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -108,6 +115,8 @@ test.describe('Find Nakamas', () => {
     await expect(sheet.getByRole('button', { name: /Νέο αίτημα από εκδήλωση|New request from event/ })).toBeVisible();
     await expect(sheet.getByRole('button', { name: /Τα σχέδιά μου|My plans/ })).toBeVisible();
     await expect(sheet.getByRole('heading', { name: /Μικρές έξοδοι|Small outings/ })).toBeVisible();
+    await expect(sheet.locator('[data-card-image-picker]')).toBeVisible();
+    await expect(sheet.locator('[data-image-depth]').first()).toHaveAttribute('data-image-depth', 'full');
     await expect(sheet.getByText('Καφές στο Κουκάκι')).toBeVisible();
     const coffeeCover = sheet.locator('[data-mini-outing-card]').filter({ hasText: 'Καφές στο Κουκάκι' }).locator('img');
     await expect(coffeeCover).toBeVisible();
