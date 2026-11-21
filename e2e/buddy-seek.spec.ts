@@ -10,6 +10,7 @@ test.describe('Find Nakamas', () => {
     await page.goto('/buddy-seek');
 
     await expect(page.getByRole('heading', { level: 1, name: /Βρες Nakamas|Find Nakamas/ })).toBeVisible();
+    await expect(page.locator('#main-content [data-image-depth]').first()).toHaveAttribute('data-image-depth', 'full');
     await expect(page.getByRole('button', { name: /Ρυθμίσεις απορρήτου|Privacy settings/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Νέο αίτημα από εκδήλωση|New request from event/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Τα σχέδιά μου|My plans/ })).toBeVisible();
