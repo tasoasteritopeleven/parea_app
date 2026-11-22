@@ -23,6 +23,7 @@ test.describe('My Plans on a phone', () => {
     // The opened plan keeps every action of a full card.
     const card = main.locator('.nakamas-card').filter({ has: page.getByRole('button', { name: title, exact: true }) });
     await expect(card.getByRole('button', { name: /Αποχώρηση|Leave/ })).toBeVisible();
+    await expect(card).toBeFocused();
   });
 });
 

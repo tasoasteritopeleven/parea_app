@@ -53,13 +53,15 @@ export function ChatHatSettingsPanel() {
         custom: true,
       });
       if (added) {
-        toast.success(t('Το καπέλο κόπηκε στο μέγεθος του κουμπιού', 'Hat cropped to the chat-button size'));
+        toast.success(t('Προστέθηκε', 'Added'));
       } else {
         toast.error(
-          t(
-            `Μπορείς να έχεις μέχρι ${MAX_CUSTOM_CHAT_HATS} δικά σου καπέλα.`,
-            `You can keep up to ${MAX_CUSTOM_CHAT_HATS} of your own hats.`,
-          ),
+          customChatHats.length >= MAX_CUSTOM_CHAT_HATS
+            ? t(
+                `Μπορείς να έχεις μέχρι ${MAX_CUSTOM_CHAT_HATS} δικά σου καπέλα.`,
+                `You can keep up to ${MAX_CUSTOM_CHAT_HATS} of your own hats.`,
+              )
+            : t('Δεν χωράει άλλο καπέλο στη συσκευή.', 'No room left on this device for another hat.'),
         );
       }
     } catch (err) {
@@ -75,14 +77,8 @@ export function ChatHatSettingsPanel() {
       role="region"
       aria-label={t('Επιλογή καπέλου συνομιλιών', 'Chat hat picker')}
     >
-      <p className={cn('text-sm font-bold', a.head)}>
+      <p className={cn('text-sm font-bold mb-4', a.head)}>
         {t('Εικονίδιο συνομιλιών', 'Chat icon')}
-      </p>
-      <p className={cn('text-xs mt-1 mb-4 leading-relaxed', a.sub)}>
-        {t(
-          'Διάλεξε, απόκρυψε ή ανέβασε το ψάθινο καπέλο του κουμπιού συνομιλιών. Η φωτογραφία κόβεται αυτόματα στο μέγεθος του bubble· απλό φόντο καθαρίζεται όταν γίνεται. Μόνο το ενεργό καπέλο εμφανίζεται στην εφαρμογή. Σύρε το οπουδήποτε στην οθόνη· ένα πάτημα ανοίγει τις συνομιλίες.',
-          'Choose, hide, or upload the straw hat for the chat button. Photos are cropped to the bubble size; a plain background is cleared when we can. Only the active hat appears in the app. Drag it anywhere; a tap opens chats.',
-        )}
       </p>
       <div className="flex flex-col items-center gap-2 mb-4">
         {current && <ChatHatThumb hat={current} />}
@@ -195,7 +191,7 @@ export function ChatHatSettingsPanel() {
                       toast.success(t('Το καπέλο κρύφτηκε', 'Hat hidden'));
                     }
                   }}
-                  className="absolute -right-1 -top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-raised text-ink-muted shadow-soft"
+                  className="absolute right-1 top-1 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-surface-raised/95 text-ink-muted shadow-soft"
                   aria-label={
                     hat.custom
                       ? t(`Διαγραφή: ${hat.labelEl}`, `Delete: ${hat.labelEn}`)
